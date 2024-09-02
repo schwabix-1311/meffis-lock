@@ -591,6 +591,9 @@ def cmd_quit(parms):
             if inp in 'yYjJ':
                 cmd_save(parms)
             elif inp in 'nN':
+                users.modified = False
+                expired.modified = False
+                lt.modified = False
                 print("-> Discarded all changes!")
             else:
                 print("    Please answer 'y' or 'n' ...")
