@@ -1,6 +1,8 @@
 backend/node_modules
 backend/public
 backend/users*.json
+backend/expired.json
+backend/lifetimes.json
 backend/config.mjs
 backend/log*.txt
 frontend/node_modules
