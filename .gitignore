@@ -3,6 +3,10 @@ backend/public
 backend/users*.json
 backend/expired.json
 backend/lifetimes.json
+backend/config.json
+backend/config-*.json
 backend/config.mjs
 backend/log*.txt
+backend/websocket.key
+backend/websocket.crt
 frontend/node_modules
