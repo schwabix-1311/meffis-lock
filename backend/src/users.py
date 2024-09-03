@@ -71,13 +71,11 @@ class Users(ABC):
     def load_from_file(self):
         """ Add users from file(s), ABSTRACT
         """
-        raise Exception("ABSTRACT")
 
     @abstractmethod
-    def write_to_file(self, fname, door=None):
+    def write_to_file(self):
         """ Write users to file(s)
         """
-        raise Exception("ABSTRACT")
 
     def exists(self, user):
         """ check existance of given name
@@ -459,11 +457,12 @@ def cmd_new(parms):
         if not nm:
             print("    No name given!  Aborting.", file=sys.stderr)
             return True
-        elif users.exists(nm):
+        if users.exists(nm):
             print("    This name does exist!  Aborting.", file=sys.stderr)
             return True
         if expired.exists(nm):
-            print("    This name exists as expired user! Try to 'revive'.  Aborting.", file=sys.stderr)
+            print("    This name exists as expired user! Try to 'revive'.  Aborting."
+                 , file=sys.stderr)
             return True
 
     if len(parms) > 2:
@@ -514,7 +513,8 @@ def cmd_delete(parms):
         expired.remove_user(nm)
         print(f"      Deleting expired user {nm}.")
     else:
-        print(f"      User {nm} not found in active nor expired users.  Ignoring.", file=sys.stderr)
+        print(f"      User {nm} not found in active nor expired users.  Ignoring."
+             , file=sys.stderr)
 
     if lt.exists(nm):
         lt.remove_user(nm)
@@ -555,10 +555,12 @@ def cmd_expire(parms):
     print(f"      Creating lifetime rule for user {nm}.")
 
     if not users.exists(nm):
-        print(f"      \7WARNING: user {nm} not found in active users. This might be a typo.", file=sys.stderr)
+        print(f"      \7WARNING: user {nm} not found in active users. This might be a typo."
+             , file=sys.stderr)
     for door in DOORS:
-      if users.is_expired(nm, door):
-        print(f"    \7WARNING: lifetime is formatted incorrectly, or resulting date is in the past!", file=sys.stderr)
+        if users.is_expired(nm, door):
+            print("    \7WARNING: lifetime formatted incorrectly, or resulting date is in the past!"
+                 , file=sys.stderr)
 
     return True
 
@@ -654,7 +656,8 @@ def cmd_help(parms):
 
 
 # Ideally each command starts with unique letter(s) to allow abbreviation.
-commands = { 'list':   (cmd_list,   'Show active users, expired users, and lifetime rules; limit to matches (string or regular expression)', '<match>')
+commands = { 'list':   (cmd_list,   'Show active users, expired users, and lifetime rules; '\
+                                    'limit to matches (string or regular expression)', '<match>')
            , 'new':    (cmd_new,    'Create new user account', '<user> [<doors>]' )
            , 'delete': (cmd_delete, 'Delete a user completely', '<user>')
            , 'expire': (cmd_expire, 'Set individual lifetime', '<user> [<lifetime>]' )
@@ -677,9 +680,10 @@ if __name__ == '__main__':
     users = ActiveUsers(lt)
     expired = ExpiredUsers(lt)
     parms = sys.argv[1:]
-    BATCH = (len(parms) >= 1)
+    BATCH = bool(len(parms) >= 1)
 
-    print(f'We have {len(users.user_keys())} active users, {len(expired.user_keys())} expired users and {len(lt.user_keys())} lifetime rules. ')
+    print(f'We have {len(users.user_keys())} active users, {len(expired.user_keys())} '\
+           'expired users and {len(lt.user_keys())} lifetime rules. ')
     print()
 
     while True:
@@ -695,6 +699,6 @@ if __name__ == '__main__':
                 cmd_quit('dummy')
                 sys.exit(0)
         else:
-            print('Input not recognized, you might need "help".  Terminating.', file=sys.stderr)
+            print('Input not recognized, you might need "help".  Terminating.'
+                 , file=sys.stderr)
             sys.exit(1)
-
