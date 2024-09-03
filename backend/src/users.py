@@ -5,8 +5,7 @@
     parameters, or as a batch tool, when exactly 1 command is given.
 """
 
-#TODO expire soll mod-Datum aktualisieren
-#TODO Ablauf incl. Uhrzeit erlauben
+#TODO Ablauf incl. Uhrzeit erlauben - würde häufigeren CRON Job erfordern: minütlich, stündlich?
 #TODO Startdatum für Zugang
 
 import sys
@@ -242,6 +241,22 @@ class ActiveUsers(Users):
                 json.dump(usr_arr, uf, indent=4, sort_keys=True)
         self.modified = False
 
+    def user_state(self, name):
+        """ return a printable line with user's state
+        """
+        ret = ''
+        if self.exists(name):
+            ret = f" {name : <40}  "
+            for door in DOORS:
+                if self.has_access(name, door):
+                    ret += f"{door} OK   "
+                elif self.is_expired(name, door):
+                    ret += f"{door} exp  "
+                else:
+                    ret += "       "
+            ret += f"  mod {self.last_modified(name)}  log {self.last_login(name)}"
+        return ret
+
 
 
 class ExpiredUsers(Users):
@@ -276,6 +291,22 @@ class ExpiredUsers(Users):
                     usr_arr[usr]['doors'] += door
             json.dump(usr_arr, uf, indent=4, sort_keys=True)
         self.modified = False
+
+    def user_state(self, name):
+        """ return a printable line with user's state
+        """
+        ret = ''
+        if self.exists(name):
+            ret = f" {name : <40}  "
+            for door in DOORS:
+                if self.has_access(name, door):
+                    ret += f"{door} OK   "
+                elif self.is_expired(name, door):
+                    ret += f"{door} exp  "
+                else:
+                    ret += "       "
+            ret += f"  mod {self.last_modified(name)}"
+        return ret
 
 
 
@@ -372,47 +403,46 @@ def encode_password(passwd):
     return {'salt': str(salt, 'utf-8'), 'hash': str(hashed, 'utf-8')}
 
 
-def show_user(lst, name, dates_fmt):
-    """ obvious
-    """
-    print(f" {name : <30}  ", end='')
-    for door in DOORS:
-        if lst.has_access(name, door):
-            print(f"{door} OK   ", end='')
-        elif lst.is_expired(name, door):
-            print(f"{door} exp  ", end='')
-        else:
-            print("       ", end='')
-    print(dates_fmt)
-
-
 #===== command handlers =====
 
 
 def cmd_list(parms):
     """ list all users
     parms[0] = invoking cmd
+    parms[1] = filter (regEx) to match each printed line, optional
     """
-    print("=== active users ===")
+    joker = r'.+'
+    matching = ''
+    if len(parms) > 1:
+        joker = parms[1]
+        matching = ', matching "' + joker + '"'
+
+    print(f'=== active users{matching} ===')
     had_one = False
     for name in users.user_keys():
-        had_one = True
-        show_user(users, name, f"  mod {users.last_modified(name)}  log {users.last_login(name)}")
+        ln = users.user_state(name)
+        if re.search(joker, ln):
+            had_one = True
+            print(ln)
     if not had_one:
-        print(" -none-")
+        print(' -none-')
 
-    print("=== expired users ===")
+    print(f'=== expired users{matching} ===')
     had_one = False
     for name in expired.user_keys():
-        had_one = True
-        show_user(expired, name, f"  mod {expired.last_modified(name)}")
+        ln = expired.user_state(name)
+        if re.search(joker, ln):
+            had_one = True
+            print(ln)
     if not had_one:
-        print(" -none-")
+        print(' -none-')
 
-    print("=== lifeiimes ===")
+    print(f'=== lifetimes{matching} ===')
     for name in lt.user_keys():
         expire = lt.expiration(name, users.doors(name))
-        print(f" {name : <30}: {expire}")
+        ln = f' {name : <30}: {expire}'
+        if re.search(joker, ln):
+            print(ln)
     return True
 
 
@@ -624,7 +654,7 @@ def cmd_help(parms):
 
 
 # Ideally each command starts with unique letter(s) to allow abbreviation.
-commands = { 'list':   (cmd_list,   'Show active users, expired users, and lifetime rules', '')
+commands = { 'list':   (cmd_list,   'Show active users, expired users, and lifetime rules; limit to matches (string or regular expression)', '<match>')
            , 'new':    (cmd_new,    'Create new user account', '<user> [<doors>]' )
            , 'delete': (cmd_delete, 'Delete a user completely', '<user>')
            , 'expire': (cmd_expire, 'Set individual lifetime', '<user> [<lifetime>]' )
